@@ -20,14 +20,16 @@ config = {
 }
 ###
 for k in config:
-    if os.getenv(k):
-        v = os.getenv(k)
-        if not v:
-            print(v)
+    v = os.getenv(k)
+    if v is not None:
+        if v == '':
+            print(f"环境变量 {k} 为空")
             config[k] = v
         else:
-            print(f"缺少环境变量{k}")
-            exit()
+            print(f"环境变量 {k} 的值为: {v}")
+    else:
+        print(f"缺少环境变量 {k}")
+        exit()
 url = "https://api.akile.io/api/v1/store/GetVpsStore"
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0"}
 counter = 0
