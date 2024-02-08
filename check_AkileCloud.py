@@ -15,21 +15,21 @@ import os
 #title = "监控_AkileCloud"
 
 config = {
-    'PUSH_PLUS_TOKEN':'62871993f33d4750b4a6e6ddafc2d035',
+    'PUSH_PLUS_TOKEN':'',
     'TITLE':'监控_AkileCloud'
 }
 ###
-""" for k in config:
+for k in config:
     v = os.getenv(k)
     if v is not None:
         if v == '':
             print(f"环境变量 {k} 为空")
-            config[k] = v
         else:
             print(f"环境变量 {k} 的值为: {v}")
+            config[k] = v
     else:
         print(f"缺少环境变量 {k}")
-        exit() """
+        exit()
 url = "https://api.akile.io/api/v1/store/GetVpsStore"
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0"}
 counter = 0
@@ -67,7 +67,6 @@ try:
             f.write(json.dumps(check_nodes))
             f.truncate()
             need_send_msg = True
-    print(difference)
 except Exception:
     print("文件不存在")
     with open("result.log",'w',encoding="UTF-8") as f:
