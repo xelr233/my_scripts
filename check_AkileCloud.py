@@ -1,10 +1,10 @@
 #!/usr/bin/python
 # coding=utf-8
 """
-File: check_AkileCloud.py
 Author: Xe
-Data: 2024/2/8 21:00
-cron 0 25 */2 * * *
+time: 2024/2/8
+cron: 0 25 */2 * * *
+new Env('监控AkileCloud');
 """
 import requests
 import json
