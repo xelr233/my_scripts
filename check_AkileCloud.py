@@ -2,14 +2,14 @@
 # coding=utf-8
 """
 Author: Xe
-time: 2024/2/9
-cron: 0 25 */2 * * *
+time: 2024/2/14
+cron: 0 25 * * * *
 new Env('监控AkileCloud');
 """
 import requests
 import json
-import time
 import os
+import time
 from notify import send
 title = os.getenv('TITLE') or '监控_AkileCloud'
 url = "https://api.akile.io/api/v1/store/GetVpsStore"
@@ -18,19 +18,20 @@ counter = 0
 is_Get_data_succes = False
 need_send_msg = False
 check_nodes = []
-difference = []
 while counter < 10:
     response = requests.get(url=url,headers=headers)
     if response.ok == True:
-        response_json = json.loads(response.text)
+        data_json = response.json()
         #stack = response_json['data'][5]['nodes'][-2]['plans'][0]['stock']
-        for item in response_json['data']:
+        for item in data_json['data']:
             for node in item['nodes']:
                 for plan in node['plans']:
                     if plan['price_datas'][0]['price'] < 1700:
-                        nodes_price = {'name':plan['plan_name']}
-                        nodes_price['stock'] = plan['stock']
-                        nodes_price['price'] = plan['price_datas'][0]['price'] / 100
+                        nodes_price = {
+                            'name':plan['plan_name'],
+                            'stock':plan['stock'],
+                            'price':plan['price_datas'][0]['price'] / 100
+                            }
                         check_nodes.append(nodes_price)
         is_Get_data_succes = True
         break
@@ -56,8 +57,9 @@ except Exception:
         difference = check_nodes
         need_send_msg = True
 if not need_send_msg:
+    print("暂无更新")
     exit()
 msg = ""
 for each in difference:
-    msg = msg + f"节点类型：{each['name']}🖥️ 价格：{each['price']}💰 数量；{each['stock']}d✅\n"
+    msg = msg + f"节点类型：{each['name']}🖥️ 价格：{each['price']}💰 数量；{each['stock']}✅\n"
 send(title,msg)
