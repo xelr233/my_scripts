@@ -6,6 +6,7 @@ time: 2024/2/14
 cron: 0 25 * * * *
 new Env('监控AkileCloud');
 """
+from re import A
 import requests
 import json
 import os
@@ -15,12 +16,14 @@ from notify import send
 
 title = os.getenv('TITLE') or '监控_AkileCloud'
 debug = os.getenv('DEBUG') or False
-url = "https://api.akile.io/api/v1/store/GetVpsStore"
+AkileCloud_url = "https://api.akile.io/api/v1/store/GetVpsStore"
+Ocent_url = "https://api.ocent.net/api/v1/store/GetVpsStore"
+
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"}
 
 
-def fetch_data():
+def fetch_data(url):
     for _ in range(10):
         response = requests.get(url=url, headers=headers)
         if response.ok:
@@ -75,13 +78,20 @@ def process_data(data_json):
     return checked_nodes
 
 
-data_json = fetch_data()
-if data_json is None:
-    print("获取失败")
+AkileCloud_data_json = fetch_data(AkileCloud_url)
+Ocent_data_json = fetch_data(Ocent_url)
+checked_nodes = []
+if AkileCloud_data_json is not None:
+    checked_nodes.extend(process_data(AkileCloud_data_json))
+if Ocent_data_json is not None:
+    checked_nodes.extend(process_data(Ocent_data_json))
+if debug:
+    print("所有检查结果：")
+    pprint(checked_nodes)
+if not checked_nodes:
+    print("暂无更新")
     exit()
-
-checked_nodes = process_data(data_json)
-
+need_send_msg = False
 try:
     with open("result.log", 'r+', encoding="UTF-8") as f:
         context = json.loads(f.read())
@@ -106,9 +116,11 @@ except FileNotFoundError:
 node_msg = []
 for each in difference:
     if each.get('year_pay_price') is not None:
-        node_msg.append(f"地域：{each['area']} 节点类型：{each['name']}🖥️ 价格：{each['month_pay_price']}💰 数量：{each['stock']}✅ 年付价格：{each['year_pay_price']}💰 支付方式：年付和月付")
+        node_msg.append(
+            f"地域：{each['area']} 节点类型：{each['name']}🖥️ 价格：{each['month_pay_price']}💰 数量：{each['stock']}✅ 年付价格：{each['year_pay_price']}💰 支付方式：年付和月付")
     else:
-        node_msg.append(f"地域：{each['area']} 节点类型：{each['name']}🖥️ 价格：{each['month_pay_price']}💰 数量：{each['stock']}✅ 支付方式：月付")
+        node_msg.append(
+            f"地域：{each['area']} 节点类型：{each['name']}🖥️ 价格：{each['month_pay_price']}💰 数量：{each['stock']}✅ 支付方式：月付")
 
 msg = "\n".join(node_msg)
 if msg == "":
