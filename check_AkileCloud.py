@@ -57,7 +57,6 @@ def process_data(data_json):
                     'name': plan['plan_name'],
                     'stock': plan['stock'],
                 }
-                year_pay = False
                 need_add = False
                 plan_price = plan['price_datas']
                 month_pay_price = plan_price[0]['price']
@@ -68,12 +67,7 @@ def process_data(data_json):
                     year_pay_price = plan_price[1]['price']
                     if year_pay_price < 12000:
                         node_price['year_pay_price'] = year_pay_price / 100
-                        year_pay = True
                 if need_add:
-                    if year_pay:
-                        node_price["payment_type"] = 2
-                    else:
-                        node_price["payment_type"] = 1
                     checked_nodes.append(node_price)
     if debug:
         print("检查结果：")
@@ -115,6 +109,8 @@ for each in difference:
         node_msg.append(f"地域：{each['area']} 节点类型：{each['name']}🖥️ 价格：{each['month_pay_price']}💰 数量：{each['stock']}✅ 年付价格：{each['year_pay_price']}💰 支付方式：年付和月付")
     else:
         node_msg.append(f"地域：{each['area']} 节点类型：{each['name']}🖥️ 价格：{each['month_pay_price']}💰 数量：{each['stock']}✅ 支付方式：月付")
+
+msg = "\n".join(node_msg)
 if msg == "":
     print("暂无更新")
     exit()
