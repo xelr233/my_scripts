@@ -11,55 +11,58 @@ import json
 import os
 import time
 from notify import send
+
 title = os.getenv('TITLE') or '监控_AkileCloud'
 url = "https://api.akile.io/api/v1/store/GetVpsStore"
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0"}
-counter = 0
-is_Get_data_succes = False
-need_send_msg = False
-check_nodes = []
-while counter < 10:
-    response = requests.get(url=url,headers=headers)
-    if response.ok == True:
-        data_json = response.json()
-        #stack = response_json['data'][5]['nodes'][-2]['plans'][0]['stock']
-        for item in data_json['data']:
-            for node in item['nodes']:
-                for plan in node['plans']:
-                    if plan['price_datas'][0]['price'] < 1700:
-                        nodes_price = {
-                            'name':plan['plan_name'],
-                            'stock':plan['stock'],
-                            'price':plan['price_datas'][0]['price'] / 100
-                            }
-                        check_nodes.append(nodes_price)
-        is_Get_data_succes = True
-        break
-    else:
-        counter +=1
+
+def fetch_data():
+    for _ in range(10):
+        response = requests.get(url=url, headers=headers)
+        if response.ok:
+            return response.json()
         time.sleep(5)
-if not is_Get_data_succes:
+    return None
+
+def process_data(data_json):
+    checked_nodes = []
+    for item in data_json['data']:
+        for node in item['nodes']:
+            for plan in node['plans']:
+                if plan['price_datas'][0]['price'] < 1700:
+                    nodes_price = {
+                        'name': plan['plan_name'],
+                        'stock': plan['stock'],
+                        'price': plan['price_datas'][0]['price'] / 100
+                    }
+                    checked_nodes.append(nodes_price)
+    return checked_nodes
+
+data_json = fetch_data()
+if data_json is None:
     print("获取失败")
     exit()
+
+checked_nodes = process_data(data_json)
+
 try:
-    with open("result.log",'r+',encoding="UTF-8") as f:
+    with open("result.log", 'r+', encoding="UTF-8") as f:
         context = json.loads(f.read())
-        difference = [item for item in check_nodes if item not in context]
+        difference = [item for item in checked_nodes if item not in context]
         if difference:
             f.seek(0)
-            f.write(json.dumps(check_nodes))
+            f.write(json.dumps(checked_nodes))
             f.truncate()
             need_send_msg = True
-except Exception:
+        else:
+            print("暂无更新")
+            exit()
+except FileNotFoundError:
     print("文件不存在")
-    with open("result.log",'w',encoding="UTF-8") as f:
-        f.write(json.dumps(check_nodes))
-        difference = check_nodes
+    with open("result.log", 'w', encoding="UTF-8") as f:
+        f.write(json.dumps(checked_nodes))
+        difference = checked_nodes
         need_send_msg = True
-if not need_send_msg:
-    print("暂无更新")
-    exit()
-msg = ""
-for each in difference:
-    msg = msg + f"节点类型：{each['name']}🖥️ 价格：{each['price']}💰 数量；{each['stock']}✅\n"
-send(title,msg)
+
+msg = "\n".join([f"节点类型：{each['name']}🖥️ 价格：{each['price']}💰 数量：{each['stock']}✅" for each in difference])
+send(title, msg)
