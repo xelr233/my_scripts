@@ -13,14 +13,19 @@ import time
 from notify import send
 
 title = os.getenv('TITLE') or '监控_AkileCloud'
+debug = os.getenv('DEBUG') or False
 url = "https://api.akile.io/api/v1/store/GetVpsStore"
-headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0"}
+headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"}
 
 def fetch_data():
     for _ in range(10):
         response = requests.get(url=url, headers=headers)
         if response.ok:
+            if debug:
+                print(response.json())
             return response.json()
+        else:
+            print(f"获取失败，状态码：{response.status_code}, 重试中...,第{_+1}次")
         time.sleep(5)
     return None
 
@@ -36,6 +41,8 @@ def process_data(data_json):
                         'price': plan['price_datas'][0]['price'] / 100
                     }
                     checked_nodes.append(nodes_price)
+    if debug:
+        print(checked_nodes)
     return checked_nodes
 
 data_json = fetch_data()
