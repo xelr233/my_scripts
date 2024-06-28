@@ -10,6 +10,7 @@ import requests
 import json
 import os
 import time
+from pprint import pprint
 from notify import send
 
 title = os.getenv('TITLE') or '监控_AkileCloud'
@@ -22,7 +23,8 @@ def fetch_data():
         response = requests.get(url=url, headers=headers)
         if response.ok:
             if debug:
-                print(response.json())
+                print(f"获取成功，状态码：{response.status_code}")
+                pprint(response.json())
             return response.json()
         else:
             print(f"获取失败，状态码：{response.status_code}, 重试中...,第{_+1}次")
@@ -42,7 +44,8 @@ def process_data(data_json):
                     }
                     checked_nodes.append(nodes_price)
     if debug:
-        print(checked_nodes)
+        print("检查结果：")
+        pprint(checked_nodes)
     return checked_nodes
 
 data_json = fetch_data()
