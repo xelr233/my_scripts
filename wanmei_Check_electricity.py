@@ -1,3 +1,11 @@
+#!/usr/bin/python3
+# coding=utf-8
+"""
+Author: Xe
+time: 2024/9/15
+cron: 0 25 */2 * * *
+new Env('电费查询');
+"""
 import requests
 import json
 import logging
