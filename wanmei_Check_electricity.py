@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from retrying import retry
 from WxPusher import WxPusher
 import os
+from random import choice
 ### 配置 ###
 # 日志配置
 logging.basicConfig(level=logging.INFO,
@@ -78,7 +79,15 @@ yesterday = yesterday.strftime('%m-%d')
 today_hour = datetime.now().hour
 
 msg_list = []
+
+with open('UA.txt', 'r', encoding='utf-8') as f:
+    _ = f.read()
+UserAgent_List = _.split('\n')
 ### 方法 ###
+
+
+def getRandomUserAgent():
+    return choice(UserAgent_List)
 
 
 @retry(stop_max_attempt_number=MAX_RETRIES, wait_fixed=WAIT_TIME)
@@ -87,11 +96,12 @@ def getInfo_electricity():
               "timestamp": TIMESTAMP}
 
     data = {
-        'param':json.dumps(params),
+        'param': json.dumps(params),
         'customercode': CUSTOMERCODE,
         'method': 'getbindroom',
         'command': 'JBSWaterElecService',
     }
+    getInfo_headers['User-Agent'] = getRandomUserAgent()
     try:
         response = requests.post(ELECTRICITY_INFO_URL,
                                  headers=getInfo_headers, data=data)
@@ -124,13 +134,15 @@ def handle_error_response(response):
 
 @retry(stop_max_attempt_number=MAX_RETRIES, wait_fixed=WAIT_TIME)
 def get_weekly_electricity_info():
-    params = {"cmd":"h5_getstuindexpage","roomverify":ROOMMERIFY,"account":ACCOUNT,"timestamp":TIMESTAMP}
+    params = {"cmd": "h5_getstuindexpage", "roomverify": ROOMMERIFY,
+              "account": ACCOUNT, "timestamp": TIMESTAMP}
     data = {
         'param': json.dumps(params),
         'customercode': CUSTOMERCODE,
         'method': 'h5_getstuindexpage',
         'command': 'JBSWaterElecService',
     }
+    getInfo_headers['User-Agent'] = getRandomUserAgent()
     try:
         response = requests.post(
             WEEKLY_ELECTRICITY_INFO_URL, headers=getInfo_headers, data=data)
