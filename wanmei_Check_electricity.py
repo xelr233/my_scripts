@@ -12,6 +12,7 @@ import logging
 from datetime import datetime, timedelta
 from retrying import retry
 from WxPusher import WxPusher
+from notify import send
 import os
 from random import choice
 ### 配置 ###
@@ -204,7 +205,7 @@ def main():
 
         msg = '\n'.join(msg_list)
         logger.info(msg)
-
+        send(TITLE, msg)
         logger.info("开始推送微信通知")
         pusher = WxPusher()
         if pusher.send_message(TITLE, msg):
