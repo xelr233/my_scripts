@@ -99,6 +99,8 @@ def parseData(data):
 
 def main():
     push_key = os.getenv('PUSH_KEY')  # PUSH_KEY
+    if push_key is None: 
+        logger.warning("PUSH_KEY 未设置!!\n取消推送")
     account = os.getenv('ACCOUNT')  # account
     if account is None: 
         logger.error("请填写正确的账号")
@@ -115,7 +117,7 @@ def main():
     logger.info(
         f"房间号：{parseedData.get('roomfullname')},今日用电量：{parseedData.get('todayuse')},剩余电量：{parseedData.get('odd')}")
 
-    if parseedData.get("odd") <= 15:
+    if parseedData.get("odd") <= 15 and push_key is not None:
         logger.warning(f"剩余电量不足15度,请及时充值")
         notity = pushme(push_key)
         if notity.sendNotify("剩余电量不足15度,请及时充值", f"房间号：{parseedData.get('roomfullname')},今日用电量：{parseedData.get('todayuse')},剩余电量：{parseedData.get('odd')}"):
@@ -123,7 +125,7 @@ def main():
         else:
             logger.errors('推送失败')
 
-    if datetime.now().hour == 12:
+    if datetime.now().hour == 12 and push_key is not None:
         logger.info("开始推送通知")
         notity = pushme(push_key)
         if notity.sendNotify("12点推送", f"房间号：{parseedData.get('roomfullname')},今日用电量：{parseedData.get('todayuse')},剩余电量：{parseedData.get('odd')}"):
