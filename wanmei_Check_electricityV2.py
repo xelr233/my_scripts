@@ -125,7 +125,8 @@ def main():
     panelversion = proxyutils.connectPanel()
     logger.info(f"当前面板版本为：{panelversion}")
     ChinaProxyNames = getChinaProxyNames(proxyutils)
-    proxyname = Random.choice(ChinaProxyNames)
+    random_instance = Random()
+    proxyname = random_instance.choice(ChinaProxyNames)
     logger.info(f"当前使用的代理为：{proxyname}")
     if not proxyutils.changeToProxy(proxyname):
         logger.error("切换代理失败，请检查面板是否正常")

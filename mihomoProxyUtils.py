@@ -57,6 +57,7 @@ class ProxyUtils:
         if response.status_code != 204:
             raise Exception("切换到直连失败")
             return False
+        return True
         
     def changeToProxy(self,proxystiename):
         url = self.proxyurl + "/proxies/GLOBAL"
@@ -68,6 +69,7 @@ class ProxyUtils:
         if response.status_code != 204:
             raise Exception("切换到代理失败")
             return False
+        return True
         
     def getProxies(self):
         url = self.proxyurl + "/providers/proxies"
