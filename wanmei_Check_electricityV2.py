@@ -4,6 +4,8 @@ import logging
 from datetime import datetime
 from pushme import pushme
 import os
+from mihomoProxyUtils import ProxyUtils
+from random import Random
 # 日志配置
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
@@ -18,7 +20,7 @@ console.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
-
+PROXY_URL = os.getenv("PROXY_URL")
 headers = {
     "Host": "xqh5.17wanxiao.com",
     "user-agent": "Mozilla/5.0 (Linux; Android 12; M2012K11AC Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/96.0.4664.104 Mobile Safari/537.36 Wanxiao/5.7.2",
@@ -36,7 +38,7 @@ headers = {
 
 
 def getBindRoom(account):
-    url = 'https://xqh5.17wanxiao.com/smartWaterAndElectricityService/SWAEServlet'    
+    url = 'https://xqh5.17wanxiao.com/smartWaterAndElectricityService/SWAEServlet'
     param = {
         "cmd": "getbindroom",
         "account": account,
@@ -48,16 +50,15 @@ def getBindRoom(account):
         "method": "getbindroom",
         "command": "JBSWaterElecService"
     }
-    with httpx.Client(http2=True) as client:
+    with httpx.Client(http2=True, proxy=PROXY_URL) as client:
         response = client.post(url, data=data, headers=headers)
         try:
             data = json.loads(response.json().get("body"))
-            roomverify = data.get("roomlist",[None])[-1].get("roomverify")
+            roomverify = data.get("roomlist", [None])[-1].get("roomverify")
             return roomverify
         except Exception as e:
             logger.error(f"解析数据失败，错误信息：{e}")
             return None
-
 
 
 def getData(roomverify, account):
@@ -75,7 +76,7 @@ def getData(roomverify, account):
         "command": "JBSWaterElecService"
     }
 
-    with httpx.Client(http2=True) as client:
+    with httpx.Client(http2=True, proxy=PROXY_URL) as client:
         response = client.post(url, data=data, headers=headers)
         try:
             data = json.loads(response.json().get("body"))
@@ -97,20 +98,47 @@ def parseData(data):
     }
 
 
+def getChinaProxyNames(proxyutils: ProxyUtils):
+    proxynamelist = proxyutils.getProxiesNames()
+    # ChinaProxyNames = []
+    # for proxyname in proxynamelist:
+    #     if '香港' in proxyname or '台湾' in proxyname :
+    #         ChinaProxyNames.append(proxyname)
+
+    # lamba
+    ChinaProxyNames = list(
+        filter(lambda x: '香港' in x or '台湾' in x, proxynamelist))
+    return ChinaProxyNames
+
+
 def main():
     push_key = os.getenv('PUSH_KEY')  # PUSH_KEY
-    if push_key is None: 
-        logger.warning("PUSH_KEY 未设置!!\n取消推送")
     account = os.getenv('ACCOUNT')  # account
-    if account is None: 
-        logger.error("请填写正确的账号")
+    proxyhost = os.getenv('PROXYHOST')
+    proxy_auth = os.getenv('PROXY_AUTH')
+    panel_public_key = os.getenv('PANEL_PUBLIC_KEY')
+    envs = [push_key, account, proxyhost, proxy_auth, panel_public_key,PROXY_URL]
+    if not all(envs):
+        logger.error("请检查环境变量是否填写正确")
+        logger.info(envs)
+    proxyutils = ProxyUtils(proxyhost, proxy_auth, panel_public_key)
+    panelversion = proxyutils.connectPanel()
+    logger.info(f"当前面板版本为：{panelversion}")
+    ChinaProxyNames = getChinaProxyNames(proxyutils)
+    proxyname = Random.choice(ChinaProxyNames)
+    logger.info(f"当前使用的代理为：{proxyname}")
+    if not proxyutils.changeToProxy(proxyname):
+        logger.error("切换代理失败，请检查面板是否正常")
         return
+    logger.info("开始获取房间信息")
     roomverify = getBindRoom(account)
-    if roomverify is None: 
+    if roomverify is None:
         logger.error("未绑定房间，请先绑定房间。")
         return
-    data = getData(roomverify=roomverify,account=account)
-    if data is None: 
+    data = getData(roomverify=roomverify, account=account)
+    if not proxyutils.changeToLoadBalance():
+        logger.error("切换负载均衡失败，请检查面板是否正常")
+    if data is None:
         logger.error("获取数据失败，请检查账号是否正确。")
         return
     parseedData = parseData(data)
@@ -132,7 +160,6 @@ def main():
             logger.info("推送成功")
         else:
             logger.errors('推送失败')
-    
 
 
 if __name__ == '__main__':
