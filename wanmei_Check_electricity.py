@@ -12,6 +12,7 @@ import logging
 from datetime import datetime, timedelta
 from retrying import retry
 from WxPusher import WxPusher
+from notify import send
 import os
 from random import choice
 ### 配置 ###
@@ -78,6 +79,7 @@ today = today.strftime('%m-%d')
 yesterday = yesterday.strftime('%m-%d')
 today_hour = datetime.now().hour
 
+electricity_waring_threshold = 10
 msg_list = []
 
 with open('UA.txt', 'r', encoding='utf-8') as f:
@@ -184,7 +186,9 @@ def main():
 
         logger.info(f"获取电费信息成功，电量：{electricity_info} 度")
         msg_list.append(f"电量：{electricity_info} 度\n")
-
+        if electricity_info < electricity_waring_threshold:
+            msg_list.append("电费预警！\n")
+            logger.warning("电费预警！")
         weekly_electricity_info = tuple(get_weekly_electricity_info())
         if len(weekly_electricity_info) < 3:
             logger.error("未获取到完整的周用电量信息，终止程序。")
@@ -196,7 +200,7 @@ def main():
 
         yesterday_used = weekly_electricity_info[-2]['used']
         day_before_yesterday_used = weekly_electricity_info[-3]['used']
-        changed = abs(yesterday_used - day_before_yesterday_used)
+        changed = round(abs(yesterday_used - day_before_yesterday_used), 1)
         msg_str_changed = "多用" if yesterday_used > day_before_yesterday_used else "节约"
 
         msg_str_saved = f"昨天比前天{msg_str_changed} {changed} 度"
@@ -204,7 +208,7 @@ def main():
 
         msg = '\n'.join(msg_list)
         logger.info(msg)
-
+        send(TITLE, msg)
         logger.info("开始推送微信通知")
         pusher = WxPusher()
         if pusher.send_message(TITLE, msg):
