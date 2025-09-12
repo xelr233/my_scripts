@@ -117,6 +117,7 @@ def main():
     proxyhost = os.getenv('PROXYHOST')
     proxy_auth = os.getenv('PROXY_AUTH')
     panel_public_key = os.getenv('PANEL_PUBLIC_KEY')
+    roomverify = os.getenv('ROOMMERIFY')
     envs = [push_key, account, proxyhost, proxy_auth, panel_public_key,PROXY_URL]
     if not all(envs):
         logger.error("请检查环境变量是否填写正确")
@@ -132,7 +133,8 @@ def main():
         logger.error("切换代理失败，请检查面板是否正常")
         return
     logger.info("开始获取房间信息")
-    roomverify = getBindRoom(account)
+    if not roomverify:
+        roomverify = getBindRoom(account)
     if roomverify is None:
         logger.error("未绑定房间，请先绑定房间。")
         return
